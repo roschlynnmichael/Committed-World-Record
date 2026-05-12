@@ -1,54 +1,72 @@
 import pygit2
 import os
 import time
+import sys
 
-# Ensure this script is inside your 'Committed-World-Record' folder
-REPO_PATH = os.getcwd() 
-GOAL = 3000005  # Surpassing the 3M mark
-BATCH_SIZE = 100000 
-
-def break_the_record():
+def run_integrated_sprint():
+    # 1. User Inputs
     try:
-        repo = pygit2.Repository(REPO_PATH)
-        print(f"Targeting Repository: {REPO_PATH}")
-        
-        # Identity
-        author = pygit2.Signature("Roschlynn Michael D'souza", "roschlynn@example.com")
-        committer = author
+        goal = int(input("How many times do you want to commit? \n"))
+        auto_push = input("Auto git push when committed? (y/n) \n").lower()
+    except ValueError:
+        print("Please enter a valid number.")
+        return
 
-        # Get the current branch and its latest commit
-        head = repo.head
-        target_branch = head.name # e.g., 'refs/heads/main'
-        parent_id = [head.target]
-        
-        # We use the existing tree (no files changed = empty commits)
-        tree = repo[head.target].tree.id
+    # 2. Setup High-Performance Engine
+    repo_path = os.getcwd()
+    try:
+        repo = pygit2.Repository(repo_path)
+    except:
+        print("Error: Could not find a Git repository in this folder.")
+        return
 
-        print(f"Currently at {repo.revparse_single('HEAD').hex[:7]}. Starting sprint...")
-        start_time = time.time()
+    # Identity
+    author = pygit2.Signature("Roschlynn Michael Dsouza", "hidden@record-attempt.local")
+    committer = author
 
-        for i in range(1, GOAL + 1):
-            # The Magic: Create commit and move the branch pointer in one go
-            commit_id = repo.create_commit(
-                target_branch, 
-                author, 
-                committer, 
-                f"Commit {i}: World Record Progress", 
-                tree, 
-                parent_id
-            )
-            
-            parent_id = [commit_id]
+    if repo.is_empty:
+        print("Error: Repo is empty. Run 'git commit --allow-empty -m \"init\"' once first.")
+        return
 
-            if i % BATCH_SIZE == 0:
-                elapsed = time.time() - start_time
-                print(f"Progress: {i}/{GOAL} | Speed: {int(i/elapsed)} commits/sec")
+    # Branch and Tree Setup
+    head = repo.head
+    target_branch = head.name 
+    parent_id = [head.target]
+    tree_id = repo[head.target].tree.id
 
-        print(f"Sprint Complete! Total Time: {time.time() - start_time:.2f}s")
+    print(f"\n[STARTING] Sprinting to {goal} commits on {repo_path}...")
+    start_time = time.time()
+    
+    # 3. High-Speed Loop
+    batch_size = 50000 if goal > 100000 else 1000
+    
+    for i in range(1, goal + 1):
+        commit_id = repo.create_commit(
+            target_branch,
+            author,
+            committer,
+            f"Commit {i} of {goal}", 
+            tree_id,
+            parent_id
+        )
+        parent_id = [commit_id]
 
-    except Exception as e:
-        print(f"Critical Error: {e}")
-        print("Check: Did you make at least one manual commit in this repo first?")
+        if i % batch_size == 0:
+            elapsed = time.time() - start_time
+            speed = int(i / elapsed)
+            sys.stdout.write(f"\rProgress: {i}/{goal} | Speed: {speed} commits/sec")
+            sys.stdout.flush()
+
+    end_time = time.time()
+    print(f"\n\n[DONE] Committed {goal} times in {end_time - start_time:.2f}s")
+
+    # 4. Auto-Push Logic (Optimized)
+    if auto_push == "y":
+        print("Running 'git gc' to optimize objects for network transfer...")
+        os.system("git gc --auto") # Quick cleanup
+        print("Pushing to GitHub...")
+        os.system("git push origin main") 
+        print("Push complete!")
 
 if __name__ == "__main__":
-    break_the_record()
+    run_integrated_sprint()

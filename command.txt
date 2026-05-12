@@ -1,0 +1,2 @@
+git gc --prune=now
+RUN THIS EVERY MILLION commits
